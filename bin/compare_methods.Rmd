@@ -1,0 +1,500 @@
+---
+title: "compare_evaluate"
+output: html_document
+date: "2024-03-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+setwd('C:/Users/mchahdil/Desktop/compare_study/') # C:/Users/mchahdil/Desktop/compare_study/ D:/compare_study/
+getwd()
+path_out ='C:/Users/mchahdil/Desktop/compare_study/output_files/'
+
+```
+
+
+```{r}
+library(readxl)
+library(ggplot2)
+library(reshape2)
+
+
+```
+
+
+
+## open files
+
+
+```{r}
+## extract type orphanet 
+df_orpha_type <- read_excel(paste(path_out,"/orphacode_type.xlsx",sep='/'))
+
+```
+
+patient confirmed
+```{r}
+
+# hpo3
+df_confirmed_hpo3_resnik <- read_excel(paste(path_out,"/pcomfirmed_measures/df_hpo3_resnik.xlsx",sep='/'))
+
+# rsd
+df_confirmed_rsd_resnik <- read_excel(paste(path_out,"/pcomfirmed_measures/df_rsd_resnik_symmetric.xlsx",sep='/'))
+df_confirmed_rsd_Aresnik <- read_excel(paste(path_out,"/pcomfirmed_measures/df_rsd_resnik_asymmetric.xlsx",sep='/'))
+
+# own formula
+df_confirmed_resnik <- read_excel(paste(path_out,"/pcomfirmed_measures/df_resnik_with_rank.xlsx",sep='/'))
+
+
+```
+
+
+
+ patient simulated 
+```{r}
+
+# hpo3 
+df_simulated_hpo3_resnik <- read_excel(paste(path_out,"/psimulated_measures/df_hpo3_psum_resnik.xlsx",sep='/'))
+# extract two first str in the element of the col 
+type_pheno = unique(substr(df_simulated_hpo3_resnik$phenopacket, 1, 2))
+
+# detect if col start with type pheno
+# negated 
+indice_type = which(grepl(type_pheno[1], df_simulated_hpo3_resnik$phenopacket))
+df_simu_hpo3_r_negated = df_simulated_hpo3_resnik[indice_type,]
+
+# optimal
+indice_type = which(grepl(type_pheno[4], df_simulated_hpo3_resnik$phenopacket))
+df_simu_hpo3_r_optimal = df_simulated_hpo3_resnik[indice_type,]
+
+# imprecision
+indice_type = which(grepl(type_pheno[2], df_simulated_hpo3_resnik$phenopacket))
+df_simu_hpo3_r_imprecision = df_simulated_hpo3_resnik[indice_type,]
+
+# noisy
+indice_type = which(grepl(type_pheno[3], df_simulated_hpo3_resnik$phenopacket))
+df_simu_hpo3_r_noisy = df_simulated_hpo3_resnik[indice_type,]
+
+```
+########################################################################################################################################
+
+
+Poportion of Orpha group in methods
+```{r}
+
+
+build_pie<-function(df_orphatype,list_methods_orpha,var_text){
+  
+  method_orpha = list_methods_orpha
+  method_orpha = unique(method_orpha)
+  
+   
+  # extract subet of df based on a list 
+  df_orpha_type_f = df_orphatype[df_orphatype$OrphaCode %in% method_orpha ,] #OR  subset(df_orpha_type, OrphaCode %in% hpo3_orpha)
+  
+  ##########################
+  
+  ggtitle("Poportion of Orpha group in methods") # for the main title
+  
+  # Basic piechart
+  pie = ggplot(df_orpha_type_f, aes(x="", fill=group)) +
+    geom_bar() +
+    coord_polar("y", start=0) +
+    ggtitle(paste("Proportion of Orphanet group for ",var_text,sep = ''))+
+    theme_void() # remove background, grid, numeric labels +
+   
+  return(pie)
+  
+
+}
+
+```
+
+Pie rsd symetric
+```{r}
+rsd_orpha = df_confirmed_rsd_resnik$ORPHAcode
+build_pie(df_orpha_type,rsd_orpha, "rsd symmetric") 
+
+```
+
+
+
+
+```{r}
+rsd_a_orpha = df_confirmed_rsd_Aresnik$ORPHAcode
+build_pie(df_orpha_type,rsd_a_orpha,"rsd Asymmetric")
+
+
+```
+own resnik:
+
+```{r}
+build_pie(df_orpha_type,df_confirmed_resnik$ORPHAcode,"resnik ")
+
+
+```
+
+
+
+
+
+Pie hpo3
+```{r}
+
+hpo3_orpha = df_confirmed_hpo3_resnik$ORPHAcode_hpo3
+build_pie(df_orpha_type,hpo3_orpha," hpo3")
+
+```
+
+
+
+
+############################## 
+Patient simulated
+
+Pie
+```{r}
+
+build_pie(df_orpha_type,df_simu_hpo3_r_optimal$ORPHAcode," optimal simulated patient ")
+
+build_pie(df_orpha_type,df_simu_hpo3_r_negated$ORPHAcode," negated simulated patient ")
+
+build_pie(df_orpha_type,df_simu_hpo3_r_imprecision$ORPHAcode," imprecision simulated patient ")
+
+build_pie(df_orpha_type,df_simu_hpo3_r_noisy$ORPHAcode," noisy simulated patient ")
+
+
+```
+
+
+
+##################################################################################
+bar plot 
+```{r}
+
+
+
+normalise_for_barplot<-function(list_measure_methods,list_methods_orpha){
+  
+     str_similarity =c(0,0.2,0.4,0.6,0.8,1)
+    
+    #Normalized Data
+    normalized = (list_measure_methods-min(list_measure_methods))/(max(list_measure_methods)-min(list_measure_methods))
+    summary(normalized)
+    
+    group_normalised = cut(normalized, breaks = str_similarity)
+    level_norm = table(group_normalised)
+   
+  return(level_norm)
+  
+
+}
+
+ 
+```
+
+
+build confirmed patient df
+```{r}
+
+ln_hpo3 = normalise_for_barplot(df_confirmed_hpo3_resnik$resnik,list_methods_orpha)
+ln_rsd = normalise_for_barplot(as.numeric(df_confirmed_rsd_resnik$score),list_methods_orpha)
+ln_Arsd = normalise_for_barplot(as.numeric(df_confirmed_rsd_Aresnik$score),list_methods_orpha)
+ln_own = normalise_for_barplot(as.numeric(df_confirmed_resnik$resnik),list_methods_orpha)
+
+
+
+df_norm <- data.frame(method_hpo3=ln_hpo3,
+                 method_rsd = ln_rsd,
+                 method_rsdA = ln_Arsd,
+                 method_own = ln_own)
+
+
+```
+
+
+
+
+reshape df 
+```{r}
+df_norm_mel = melt(df_norm)
+
+```
+
+
+plot values per score 
+```{r}
+
+
+ggplot(data=df_norm_mel, aes(x=method_hpo3.group_normalised, y=value, fill=variable)) +
+     geom_bar(stat="identity", color="black", position=position_dodge())+
+     theme_minimal() +
+    ggtitle("Distribution of similarity  (resnik) of patients confirmed") + # for the main title
+    xlab("Nb of pairs") + # for the x axis label
+    ylab("Similary score ")   # for the y axis label
+
+
+```
+#######################################################################################################
+
+build confirmed patient df
+```{r}
+
+ln_op = normalise_for_barplot(df_simu_hpo3_r_optimal$resnik,list_methods_orpha)
+ln_n = normalise_for_barplot(df_simu_hpo3_r_negated$resnik,list_methods_orpha)
+ln_i = normalise_for_barplot(df_simu_hpo3_r_imprecision$resnik,list_methods_orpha)
+ln_ny = normalise_for_barplot(df_simu_hpo3_r_noisy$resnik,list_methods_orpha)
+
+
+
+df_norm <- data.frame(optimal=ln_op,
+                 negated = ln_n,
+                 imprecision = ln_i,
+                 noisy = ln_ny)
+
+
+```
+
+
+
+
+reshape df 
+```{r}
+df_norm_mel = melt(df_norm)
+
+```
+
+
+plot values per score 
+```{r}
+
+
+ggplot(data=df_norm_mel, aes(x=optimal.group_normalised, y=value, fill=variable)) +
+     geom_bar(stat="identity", color="black", position=position_dodge())+
+     theme_minimal() +
+    ggtitle("Distribution of similarity  (resnik) of patients simulated") + # for the main title
+    xlab("Nb of pairs") + # for the x axis label
+    ylab("Similary score ")   # for the y axis label
+
+
+```
+
+#######################################################################################################
+
+cumulative rank hpo3
+```{r}
+
+cum_measure_per_rank<-function(list_from_method,df,col_method){
+  
+  # incremente une liste avec le nb d'orpha pour le top i 
+  orpha_all_top = list()
+  for (i in 1:50){
+    # extrait uniqument les rank top i
+    normes_vector = c(list_from_method == i)
+    # extract indice
+    indice_top = which(normes_vector)
+    # from the df extract subdf only with element in top i
+    df_only_top_i = df[indice_top,]
+    # count orpha in this top i
+    nb_orpha_top_i = sum(unique(as.numeric(unlist(df_only_top_i[,col_method] )))) 
+      # score -  sum(unique(as.numeric(unlist(df_only_top_i[,col_method] )))) 
+      # orpha -  sum(as.numeric(length(unique(df_only_top_i[,col_method]) ))) 
+    # add the count ina list
+    orpha_all_top[[i]] <- nb_orpha_top_i  #/ length(unique(df_hpo3_resnik$ORPHAcode_hpo3))
+      
+  }
+  
+  orpha_all_top = cumsum(as.numeric(orpha_all_top))
+  
+  # from cum nb orpha get the percentage 
+  orpha_cum = list()
+  for (j in 1:length(orpha_all_top)){
+    percent_cum = ( orpha_all_top[[j]] / orpha_all_top[[length(orpha_all_top-1)]] )*100
+    # print(percent_cum)
+    orpha_cum[[j]] = percent_cum
+    j = j+1
+  }
+ 
+   
+  return(orpha_cum)
+}
+
+```
+
+
+cumulative rank rsd
+
+```{r}
+
+# score
+cum_score_hpo3 = cum_measure_per_rank(df_confirmed_hpo3_resnik$rank_hpo3,df_confirmed_hpo3_resnik,"resnik") # resnik ORPHAcode_hpo3
+cum_score_rsd = cum_measure_per_rank(df_confirmed_rsd_resnik$rank,df_confirmed_rsd_resnik,'score') # score ORPHAcode
+cum_score_A_rsd = cum_measure_per_rank(df_confirmed_rsd_Aresnik$rank,df_confirmed_rsd_Aresnik,'score') # score ORPHAcode
+cum_score_own = cum_measure_per_rank(df_confirmed_resnik$rank,df_confirmed_resnik,'resnik') # score ORPHAcode
+
+```
+
+
+
+
+
+ 
+
+create the df plot
+```{r}
+rm(df_plot)
+
+df_plot <- data.frame(nb_orpha_hpo3 = unlist(cum_score_hpo3) ,
+                      nb_orpha_rsd  = unlist(cum_score_rsd) ,
+                      nb_orpha_Arsd = unlist(cum_score_A_rsd) ,
+                      nb_orpha_own = unlist(cum_score_A_rsd) ,
+
+                      rank = seq(1,50,by=1))  # pas de precision 1 si diminue ce nombre on augmente l'intervale 
+
+# la liste il y a a chaque fois 120 maladies c'est pour ca que c'est une droite
+#cumsum(orpha_all_top)
+
+
+```
+
+
+
+plot
+```{r}
+ 
+
+ggplot(df_plot, aes(rank)) + 
+  geom_line(aes(y = nb_orpha_hpo3, colour = "hpo3")) + 
+  geom_line(aes(y = nb_orpha_rsd, colour = "rsd")) +
+  geom_line(aes(y = nb_orpha_Arsd, colour = "rsd A")) +
+  geom_line(aes(y = nb_orpha_own, colour = "own resnik")) +
+
+  ggtitle("Cumulative distribution of the rank based on similarity score patient confirmed ") + # for the main title
+  xlab("rank") + # for the x axis label
+  ylab("percent sim score ")   # for the y axis label
+
+
+
+```
+
+
+
+
+####################################################################################################
+
+
+cumulative rank rsd
+
+```{r}
+
+# score
+cum_score_op = cum_measure_per_rank(df_simu_hpo3_r_optimal$rank_hpo3,df_simu_hpo3_r_optimal,"resnik") # resnik ORPHAcode_hpo3
+cum_score_n = cum_measure_per_rank(df_simu_hpo3_r_negated$rank_hpo3,df_simu_hpo3_r_negated,'resnik') # score ORPHAcode
+cum_score_ny = cum_measure_per_rank(df_simu_hpo3_r_noisy$rank_hpo3,df_simu_hpo3_r_noisy,'resnik') # score ORPHAcode
+cum_score_i = cum_measure_per_rank(df_simu_hpo3_r_imprecision$rank_hpo3,df_simu_hpo3_r_imprecision,'resnik') # score ORPHAcode
+
+```
+
+
+
+
+
+ 
+
+create the df plot
+```{r}
+rm(df_plot)
+
+df_plot <- data.frame(nb_orpha_o = unlist(cum_score_op) ,
+                      nb_orpha_n  = unlist(cum_score_n) ,
+                      nb_orpha_ny = unlist(cum_score_ny) ,
+                      nb_orpha_i = unlist(cum_score_i) ,
+
+                      rank = seq(1,50,by=1))  # pas de precision 1 si diminue ce nombre on augmente l'intervale 
+
+# la liste il y a a chaque fois 120 maladies c'est pour ca que c'est une droite
+#cumsum(orpha_all_top)
+
+
+```
+
+
+
+plot
+```{r}
+ 
+
+ggplot(df_plot, aes(rank)) + 
+  geom_line(aes(y = nb_orpha_o, colour = "optimal")) + 
+  geom_line(aes(y = nb_orpha_n, colour = "negated")) +
+  geom_line(aes(y = nb_orpha_ny, colour = "noisy")) +
+  geom_line(aes(y = nb_orpha_i, colour = "imprecision")) +
+
+  ggtitle("Cumulative distribution of the rank based on similarity score patient simulated ") + # for the main title
+  xlab("rank") + # for the x axis label
+  ylab("percent sim score ")   # for the y axis label
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{ }
+
+# incremente une liste avec le nb d'orpha pour le top i 
+orpha_top_rsd = list()
+for (i in 1:50){
+  # extrait uniqument les rank top i
+  normes_vector = c(df_rsd_resnik$rank == i)
+  # extract indice
+  indice_top = which(normes_vector)
+  # from the df extract subdf only with element in top i
+  df_only_top_i = df_rsd_resnik[indice_top,]
+  # count orpha in this top i
+  nb_orpha_top_i = sum(unique(as.numeric(df_only_top_i$score))) # sum(as.numeric(df_only_top_i$ORPHAcode))
+  # add the count ina list
+  orpha_top_rsd[[i]] <- nb_orpha_top_i 
+    
+}
+
+# cum sum of nb of orphacode for each top 
+orpha_top_rsd = cumsum(as.numeric(orpha_top_rsd))
+
+orpha_cum = list()
+i = 1
+for (i in 1:length(orpha_top_rsd)){
+  percent_cum = ( orpha_top_rsd[[i]] / orpha_top_rsd[[length(orpha_top_rsd-1)]] )*100
+  # print(percent_cum)
+  orpha_cum[[i]] = percent_cum
+  i = i+1
+}
+
+#normalized_rsd = (orpha_top_rsd-min(orpha_top_rsd))/(max(orpha_top_rsd)-min(orpha_top_rsd))
+
+
+
+```
