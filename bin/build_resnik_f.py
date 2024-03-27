@@ -104,10 +104,10 @@ import pandas as pd
 # localisation in compare_study folder 
 path_projet = ""
 
-path_input = path_projet + r"input_files/"
-path_orpha = path_input+r'orphanet_files/'
+path_input = path_projet + "input_files/"
+path_orpha = path_input+ 'orphanet_files/'
 
-path_output = path_projet + r"output_files/"
+path_output = path_projet + "output_files/"
 
 #############################################
 path_phenopacket = path_input + 'df_hpo_simulated.xlsx' # df_hpo_solved_confirmed  df_hpo_simulated
