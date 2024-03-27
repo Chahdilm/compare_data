@@ -101,16 +101,15 @@ import pandas as pd
 
 
 #############################################
-path_projet = "\compare_study\\"
+path_projet = "/compare_study/"
 
-path_input = path_projet + r"\input_files\\"
-path_orpha = path_input+r'\orphanet_files'
+path_input = path_projet + r"/input_files/"
+path_orpha = path_input+r'/orphanet_files/'
 
-path_output = path_projet + r"\output_files\\"
+path_output = path_projet + r"/output_files/"
 
 #############################################
-path_phenopacket = path_input + '\df_hpo_solved_simulated.xlsx' # df_hpo_solved_confirmed  df_hpo_simulated
-# patients confirmed r"D:\DELL\data_patient\json_raw\\"
+path_phenopacket = path_input + '/df_hpo_solved_simulated.xlsx' # df_hpo_solved_confirmed  df_hpo_simulated
 
 pd_phenopacket_input = pd.read_excel(path_phenopacket,engine='openpyxl',index_col=0)
 
