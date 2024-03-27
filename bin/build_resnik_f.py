@@ -101,17 +101,19 @@ import pandas as pd
 
 
 #############################################
-path_projet = "/compare_study/"
+# localisation in compare_study folder 
+path_projet = ""
 
-path_input = path_projet + r"/input_files/"
-path_orpha = path_input+r'/orphanet_files/'
+path_input = path_projet + r"input_files/"
+path_orpha = path_input+r'orphanet_files/'
 
-path_output = path_projet + r"/output_files/"
+path_output = path_projet + r"output_files/"
 
 #############################################
-path_phenopacket = path_input + '/df_hpo_solved_simulated.xlsx' # df_hpo_solved_confirmed  df_hpo_simulated
+path_phenopacket = path_input + 'df_hpo_simulated.xlsx' # df_hpo_solved_confirmed  df_hpo_simulated
 
 pd_phenopacket_input = pd.read_excel(path_phenopacket,engine='openpyxl',index_col=0)
+
 
 #############################################
 ### I. HPO metric 
